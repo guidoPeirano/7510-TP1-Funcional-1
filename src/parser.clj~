@@ -99,16 +99,17 @@
   [query rule_format checking_statement statement_database]
   (let [statement_name 0 first_argument 1]
     (def query_statement
-      (concat [(nth checking_statement statement_name)]
+      (concat (nth checking_statement statement_name)
               (get-statement-participants query rule_format checking_statement first_argument))
-      )
-    (not-empty (filter (fn[x] (= x query_statement)) statement_database)))
+      ))
   )
 
 (defn get-statement-participants
   [query rule_format statement_format step_number]
   (cond (= step_number (count statement_format)) nil
       :else
-      (concat [(nth query (.indexOf rule_format (get statement_format step_number)))]
+    ((def statement_incognit (get statement_format step_number)))
+      (def rule_incognit (.indexOf rule_format statement_incognit))
+      (concat [(nth query rule_incognit)]
               (get-statement-participants query rule_format statement_format (+ step_number 1))))
   )
