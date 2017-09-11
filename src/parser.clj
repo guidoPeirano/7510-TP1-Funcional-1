@@ -52,7 +52,7 @@
 (defn query-is-a-rule
   "Determines if a query is part of a logic rule"
   [query database_rules]
-  (not-empty (filter (fn [x] (query-matches-rule query (nth x 0))) database-rules))
+  (not-empty (filter (fn [x] (query-matches-rule query (nth x 0))) database_rules))
   )
 (defn query-matches-rule
   "Determine if a query has the same format as a specific rule"
@@ -66,31 +66,33 @@
 (defn query-processor
   "Processes a input query and determines its value"
   [input statements rules]
-  (def processed_input (clojure.string/replace input #" " ""))
-  (def query (parse-with-pattern processed_input #"\W"))
-  (if (query-is-statement input statements)
+  (def query (parse-with-pattern input #"\W"))
+  (if (query-is-statement query statements)
     true
-    (if (query-is-a-rule input rules)
-      (determine-rule-match input rules statements)
-      false)
-     )
+    (if (query-is-a-rule query rules)
+      (determine-rule-match query rules statements)
+      false))
   )
 
 (defn determine-rule-match
   "Determines if a rule match is true"
   [query database_rules database_statements]
-  (def rule_matched (query-is-a-rule query database_rules))
-  ()
+  (let [rule_name 0 conditions 1 step 0 clojure_bug 0]
+    (def rule_matched (nth (query-is-a-rule query database_rules) 0))
+    (check-statements-matches query (parse-with-pattern (nth rule_matched rule_name) #"\W")
+     (parse-with-pattern (nth rule_matched conditions) #"\|")
+                              database_statements step))
  )
 
 (defn check-statements-matches
   "Checks statements matches"
-  [query rule statement_database statement_number]
-  (let [ rule_len (count rule) rule_format 0]
-    (if (= statement_number rule_len) true
+  [query rule_header conditions statement_database step]
+  (let [ condition_len (count conditions)]
+    (println step condition_len)
+    (if (= step condition_len) true
       (and
-       (check-this-match query (nth rule rule_format)(nth rule statement_number) statement_database)
-       (check-statements-matches query rule statements (+ statement_number 1))))
+       (check-this-match query rule_header (parse-with-pattern (nth conditions step) #"\W") statement_database)
+       (check-statements-matches query rule_header conditions statement_database (+ step 1))))
     )
   )
 
@@ -98,17 +100,20 @@
   "Checks a specific match"
   [query rule_format checking_statement statement_database]
   (let [statement_name 0 first_argument 1]
+    (println "this match")
     (def query_statement
       (concat [(nth checking_statement statement_name)]
               (get-statement-participants query rule_format checking_statement first_argument))
       )
+    (println query_statement)
     (not-empty (filter (fn[x] (= x query_statement)) statement_database)))
   )
 
 (defn get-statement-participants
   [query rule_format statement_format step_number]
-  (cond (= step_number (count statement_format)) nil
+  (println "state partic" query rule_format statement_format step_number)
+  (cond (= step_number (count statement_format)) []
       :else
-      (concat [(nth query (.indexOf rule_format (get statement_format step_number)))]
+    (concat [(nth query (.indexOf rule_format (nth statement_format step_number)))]
               (get-statement-participants query rule_format statement_format (+ step_number 1))))
   )
